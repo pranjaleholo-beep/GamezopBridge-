@@ -7,25 +7,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - uses: actions/setup-java@v3
       with:
         java-version: '8'
         distribution: 'temurin'
-    - name: Get libs
+
+    - name: Download android.jar
       run: |
-        mkdir libs
-        wget -q "https://github.com/mit-cml/appinventor-sources/raw/master/appinventor/lib/android/android-21.jar" -O libs/android.jar
-        wget -q "https://github.com/mit-cml/appinventor-sources/raw/master/appinventor/components/build/classes/AndroidRuntime/AndroidRuntime.jar" -O libs/simple_components.jar
+        wget -q "https://dl.google.com/android/repository/android-21_r02.zip" -O android.zip
+        unzip -q android.zip
+        cp android-21/android.jar libs/android.jar
+
     - name: Compile
       run: |
         mkdir -p build/classes
-        javac -source 7 -target 7 -classpath libs/android.jar:libs/simple_components.jar -d build/classes src/com/gamezop/bridge/GamezopBridge.java
-    - name: Package
+        javac -source 7 -target 7 \
+          -classpath libs/android.jar:libs/AndroidRuntime.jar \
+          -d build/classes \
+          src/com/gamezop/bridge/GamezopBridge.java
+
+    - name: Package AIX
       run: |
         mkdir -p aix/com.gamezop.bridge/files
-        cd build/classes && jar cf ../../aix/com.gamezop.bridge/classes.jar com/ && cd ../..
-        cp libs/simple_components.jar aix/com.gamezop.bridge/files/AndroidRuntime.jar
-        cd aix && zip -r ../GamezopBridge.aix com.gamezop.bridge/
+        cd build/classes
+        jar cf ../../aix/com.gamezop.bridge/classes.jar com/
+        cd ../..
+        cp libs/AndroidRuntime.jar aix/com.gamezop.bridge/files/AndroidRuntime.jar
+        cd aix
+        zip -r ../GamezopBridge.aix com.gamezop.bridge/
+
     - uses: actions/upload-artifact@v3
       with:
         name: GamezopBridge
